@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import joblib
 import numpy as np
 import pandas as pd
@@ -10,8 +8,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 
-ROOT = Path(__file__).resolve().parent
-MODEL_PATH = ROOT / "models" / "credit_mlp.joblib"
+from config import MODEL_PATH, ROOT
 
 
 def main():
