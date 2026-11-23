@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout, QWidget,
 )
 
+from desktop.worker import PredictWorker
 from services.prediction_service import PredictionService
 
 
@@ -22,6 +23,8 @@ class MainWindow(QMainWindow):
     def __init__(self, service: PredictionService):
         super().__init__()
         self.service = service
+        self.worker = None
+        self.close_requested = False
         self.setWindowTitle("Кредитный скоринг")
         self.resize(500, 390)
 
@@ -72,24 +75,64 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def on_predict_clicked(self):
+        if self.worker is not None:
+            return
         try:
-            if self.tabs.currentIndex() == 0:
-                values = []
-                for (label, _), field in zip(self.FEATURES, self.fields):
-                    value = field.text().strip().replace(",", ".")
-                    try:
-                        float(value)
-                    except ValueError:
-                        field.setFocus()
-                        raise ValueError(f"Введите число в поле «{label}».") from None
-                    values.append(value)
-                text = ", ".join(values)
-            else:
-                text = self.features_input.text()
-            result = self.service.run(text)
+            text = self.input_text()
         except ValueError as error:
-            result = str(error)
+            self.on_error(str(error))
+            return
+
+        self.worker = PredictWorker(self.service, text, self)
+        self.worker.finished_ok.connect(self.on_success)
+        self.worker.failed.connect(self.on_error)
+        self.worker.finished.connect(self.on_worker_finished)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.set_inputs_enabled(False)
+        self.result_label.setText("Вычисление...")
+        self.worker.start()
+
+    def input_text(self):
+        if self.tabs.currentIndex() == 1:
+            return self.features_input.text()
+
+        values = []
+        for (label, _), field in zip(self.FEATURES, self.fields):
+            value = field.text().strip().replace(",", ".")
+            try:
+                float(value)
+            except ValueError:
+                field.setFocus()
+                raise ValueError(f"Введите число в поле «{label}».") from None
+            values.append(value)
+        return ", ".join(values)
+
+    def set_inputs_enabled(self, enabled: bool):
+        self.tabs.setEnabled(enabled)
+        self.predict_button.setEnabled(enabled)
+        self.clear_button.setEnabled(enabled)
+
+    @Slot(str)
+    def on_success(self, result):
         self.result_label.setText(result)
+
+    @Slot(str)
+    def on_error(self, message):
+        self.result_label.setText(message)
+
+    @Slot()
+    def on_worker_finished(self):
+        self.worker = None
+        self.set_inputs_enabled(True)
+        if self.close_requested:
+            self.close()
+
+    def closeEvent(self, event):
+        if self.worker is not None:
+            self.close_requested = True
+            event.ignore()
+        else:
+            super().closeEvent(event)
 
     @Slot()
     def on_clear_clicked(self):
