@@ -1,10 +1,11 @@
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import (
-    QFormLayout, QLabel, QLineEdit, QMainWindow, QPushButton, QTabWidget,
+    QComboBox, QFormLayout, QLabel, QLineEdit, QMainWindow, QProgressBar, QPushButton, QTabWidget,
     QVBoxLayout, QWidget,
 )
 
 from desktop.worker import PredictWorker
+from ml.predictor import Predictor
 from services.prediction_service import PredictionService
 
 
@@ -20,9 +21,9 @@ class MainWindow(QMainWindow):
         ("Трудовой стаж, лет", "10"),
     )
 
-    def __init__(self, service: PredictionService):
+    def __init__(self, predictors: dict[str, Predictor]):
         super().__init__()
-        self.service = service
+        self.predictors = predictors
         self.worker = None
         self.close_requested = False
         self.setWindowTitle("Кредитный скоринг")
@@ -31,6 +32,12 @@ class MainWindow(QMainWindow):
         panel = QWidget()
         self.setCentralWidget(panel)
         layout = QVBoxLayout(panel)
+        self.model_box = QComboBox()
+        self.model_box.addItems(list(predictors))
+        self.service = PredictionService(predictors[self.model_box.currentText()])
+        model_form = QFormLayout()
+        model_form.addRow("Модель", self.model_box)
+        layout.addLayout(model_form)
         self.tabs = QTabWidget()
         layout.addWidget(self.tabs)
         form_page = QWidget()
@@ -63,7 +70,13 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.predict_button)
         layout.addWidget(self.clear_button)
         layout.addWidget(self.result_label)
+        self.probability_bar = QProgressBar()
+        self.probability_bar.setRange(0, 100)
+        self.probability_bar.setFormat("Вероятность предсказанного класса: %p%")
+        layout.addWidget(self.probability_bar)
+        self.probability_bar.hide()
 
+        self.model_box.currentIndexChanged.connect(self.on_model_changed)
         self.predict_button.clicked.connect(self.on_predict_clicked)
         self.features_input.returnPressed.connect(self.on_predict_clicked)
         self.clear_button.clicked.connect(self.on_clear_clicked)
@@ -72,6 +85,17 @@ class MainWindow(QMainWindow):
     @Slot()
     def reset_result(self):
         self.result_label.setText(self.INITIAL_RESULT)
+        self.probability_bar.hide()
+
+    @Slot(int)
+    def on_model_changed(self, index):
+        self.service.predictor = self.predictors[self.model_box.itemText(index)]
+        self.reset_result()
+
+    @Slot(float)
+    def on_probability(self, probability):
+        self.probability_bar.setValue(round(probability * 100))
+        self.probability_bar.show()
 
     @Slot()
     def on_predict_clicked(self):
@@ -84,6 +108,8 @@ class MainWindow(QMainWindow):
             return
 
         self.worker = PredictWorker(self.service, text, self)
+        self.probability_bar.hide()
+        self.worker.probability_ready.connect(self.on_probability)
         self.worker.finished_ok.connect(self.on_success)
         self.worker.failed.connect(self.on_error)
         self.worker.finished.connect(self.on_worker_finished)
@@ -108,6 +134,7 @@ class MainWindow(QMainWindow):
         return ", ".join(values)
 
     def set_inputs_enabled(self, enabled: bool):
+        self.model_box.setEnabled(enabled)
         self.tabs.setEnabled(enabled)
         self.predict_button.setEnabled(enabled)
         self.clear_button.setEnabled(enabled)
@@ -118,6 +145,7 @@ class MainWindow(QMainWindow):
 
     @Slot(str)
     def on_error(self, message):
+        self.probability_bar.hide()
         self.result_label.setText(message)
 
     @Slot()

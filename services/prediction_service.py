@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from math import isfinite
 
 from ml.predictor import Predictor
@@ -7,7 +8,7 @@ class PredictionService:
     def __init__(self, predictor: Predictor):
         self.predictor = predictor
 
-    def run(self, text: str) -> str:
+    def run(self, text: str, on_probability: Callable[[float], None] | None = None) -> str:
         if not text.strip():
             raise ValueError("Введите признаки через запятую.")
         try:
@@ -18,4 +19,6 @@ class PredictionService:
             raise ValueError("Все признаки должны быть конечными числами.")
 
         result = self.predictor.predict(features)
+        if on_probability is not None and "proba" in result:
+            on_probability(result["proba"])
         return {0: "Нет дефолта", 1: "Дефолт"}[result["prediction"]]
