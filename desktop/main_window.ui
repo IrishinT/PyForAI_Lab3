@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>500</width><height>390</height></rect></property>
+  <property name="windowTitle"><string>Кредитный скоринг</string></property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="main_layout">
+    <item><layout class="QFormLayout" name="model_form">
+     <item row="0" column="0"><widget class="QLabel" name="model_label"><property name="text"><string>Модель</string></property></widget></item>
+     <item row="0" column="1"><widget class="QComboBox" name="model_box"></widget></item>
+    </layout></item>
+    <item><widget class="QTabWidget" name="tabs">
+     <widget class="QWidget" name="form_page">
+      <attribute name="title"><string>По полям</string></attribute>
+      <layout class="QFormLayout" name="feature_form">
+       <item row="0" column="0"><widget class="QLabel" name="age_label"><property name="text"><string>Возраст заёмщика, лет</string></property></widget></item>
+       <item row="0" column="1"><widget class="QLineEdit" name="age_input"><property name="placeholderText"><string>Например, 35</string></property></widget></item>
+       <item row="1" column="0"><widget class="QLabel" name="income_label"><property name="text"><string>Доход заёмщика, ден. ед.</string></property></widget></item>
+       <item row="1" column="1"><widget class="QLineEdit" name="income_input"><property name="placeholderText"><string>Например, 60000</string></property></widget></item>
+       <item row="2" column="0"><widget class="QLabel" name="amount_label"><property name="text"><string>Сумма кредита, ден. ед.</string></property></widget></item>
+       <item row="2" column="1"><widget class="QLineEdit" name="amount_input"><property name="placeholderText"><string>Например, 25000</string></property></widget></item>
+       <item row="3" column="0"><widget class="QLabel" name="term_label"><property name="text"><string>Срок кредита, месяцев</string></property></widget></item>
+       <item row="3" column="1"><widget class="QLineEdit" name="term_input"><property name="placeholderText"><string>Например, 24</string></property></widget></item>
+       <item row="4" column="0"><widget class="QLabel" name="loans_label"><property name="text"><string>Количество предыдущих кредитов</string></property></widget></item>
+       <item row="4" column="1"><widget class="QLineEdit" name="loans_input"><property name="placeholderText"><string>Например, 2</string></property></widget></item>
+       <item row="5" column="0"><widget class="QLabel" name="late_label"><property name="text"><string>Количество просроченных платежей</string></property></widget></item>
+       <item row="5" column="1"><widget class="QLineEdit" name="late_input"><property name="placeholderText"><string>Например, 1</string></property></widget></item>
+       <item row="6" column="0"><widget class="QLabel" name="employment_label"><property name="text"><string>Трудовой стаж, лет</string></property></widget></item>
+       <item row="6" column="1"><widget class="QLineEdit" name="employment_input"><property name="placeholderText"><string>Например, 10</string></property></widget></item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="line_page">
+      <attribute name="title"><string>Одной строкой</string></attribute>
+      <layout class="QVBoxLayout" name="line_layout">
+       <item><widget class="QLabel" name="order_label"><property name="text"><string>1. Возраст заёмщика, лет
+2. Доход заёмщика, ден. ед.
+3. Сумма кредита, ден. ед.
+4. Срок кредита, месяцев
+5. Количество предыдущих кредитов
+6. Количество просроченных платежей
+7. Трудовой стаж, лет</string></property></widget></item>
+       <item><widget class="QLineEdit" name="features_input"><property name="placeholderText"><string>Признаки через запятую</string></property></widget></item>
+       <item><spacer name="line_spacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item>
+      </layout>
+     </widget>
+    </widget></item>
+    <item><widget class="QPushButton" name="predict_button"><property name="text"><string>Предсказать</string></property></widget></item>
+    <item><widget class="QPushButton" name="clear_button"><property name="text"><string>Очистить</string></property></widget></item>
+    <item><widget class="QLabel" name="result_label"><property name="text"><string>Результат появится здесь</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+    <item><widget class="QProgressBar" name="probability_bar"><property name="format"><string>Вероятность предсказанного класса: %p%</string></property><property name="value"><number>0</number></property></widget></item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

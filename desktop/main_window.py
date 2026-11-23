@@ -1,79 +1,28 @@
 from PySide6.QtCore import Slot
-from PySide6.QtWidgets import (
-    QComboBox, QFormLayout, QLabel, QLineEdit, QMainWindow, QProgressBar, QPushButton, QTabWidget,
-    QVBoxLayout, QWidget,
-)
+from PySide6.QtWidgets import QMainWindow
 
+from desktop.ui_main_window import Ui_MainWindow
 from desktop.worker import PredictWorker
 from ml.predictor import Predictor
 from services.prediction_service import PredictionService
 
 
-class MainWindow(QMainWindow):
-    INITIAL_RESULT = "Результат появится здесь"
-    FEATURES = (
-        ("Возраст заёмщика, лет", "35"),
-        ("Доход заёмщика, ден. ед.", "60000"),
-        ("Сумма кредита, ден. ед.", "25000"),
-        ("Срок кредита, месяцев", "24"),
-        ("Количество предыдущих кредитов", "2"),
-        ("Количество просроченных платежей", "1"),
-        ("Трудовой стаж, лет", "10"),
-    )
-
+class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, predictors: dict[str, Predictor]):
         super().__init__()
         self.predictors = predictors
         self.worker = None
         self.close_requested = False
-        self.setWindowTitle("Кредитный скоринг")
-        self.resize(500, 390)
-
-        panel = QWidget()
-        self.setCentralWidget(panel)
-        layout = QVBoxLayout(panel)
-        self.model_box = QComboBox()
+        self.setupUi(self)
+        self.initial_result = self.result_label.text()
         self.model_box.addItems(list(predictors))
         self.service = PredictionService(predictors[self.model_box.currentText()])
-        model_form = QFormLayout()
-        model_form.addRow("Модель", self.model_box)
-        layout.addLayout(model_form)
-        self.tabs = QTabWidget()
-        layout.addWidget(self.tabs)
-        form_page = QWidget()
-        form = QFormLayout(form_page)
-        self.fields = []
-        for label, example in self.FEATURES:
-            field = QLineEdit()
-            field.setPlaceholderText(f"Например, {example}")
+        self.fields = (
+            self.age_input, self.income_input, self.amount_input, self.term_input,
+            self.loans_input, self.late_input, self.employment_input,
+        )
+        for field in self.fields:
             field.returnPressed.connect(self.on_predict_clicked)
-            form.addRow(label, field)
-            self.fields.append(field)
-        self.tabs.addTab(form_page, "По полям")
-
-        line_page = QWidget()
-        line_layout = QVBoxLayout(line_page)
-        order = QLabel("\n".join(
-            f"{i}. {label}" for i, (label, _) in enumerate(self.FEATURES, start=1)
-        ))
-        line_layout.addWidget(order)
-        self.features_input = QLineEdit()
-        self.features_input.setPlaceholderText("Признаки через запятую")
-        line_layout.addWidget(self.features_input)
-        line_layout.addStretch()
-        self.tabs.addTab(line_page, "Одной строкой")
-        self.predict_button = QPushButton("Предсказать")
-        self.clear_button = QPushButton("Очистить")
-        self.result_label = QLabel(self.INITIAL_RESULT)
-        self.result_label.setWordWrap(True)
-
-        layout.addWidget(self.predict_button)
-        layout.addWidget(self.clear_button)
-        layout.addWidget(self.result_label)
-        self.probability_bar = QProgressBar()
-        self.probability_bar.setRange(0, 100)
-        self.probability_bar.setFormat("Вероятность предсказанного класса: %p%")
-        layout.addWidget(self.probability_bar)
         self.probability_bar.hide()
 
         self.model_box.currentIndexChanged.connect(self.on_model_changed)
@@ -84,7 +33,7 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def reset_result(self):
-        self.result_label.setText(self.INITIAL_RESULT)
+        self.result_label.setText(self.initial_result)
         self.probability_bar.hide()
 
     @Slot(int)
@@ -123,12 +72,13 @@ class MainWindow(QMainWindow):
             return self.features_input.text()
 
         values = []
-        for (label, _), field in zip(self.FEATURES, self.fields):
+        for field in self.fields:
             value = field.text().strip().replace(",", ".")
             try:
                 float(value)
             except ValueError:
                 field.setFocus()
+                label = self.feature_form.labelForField(field).text()
                 raise ValueError(f"Введите число в поле «{label}».") from None
             values.append(value)
         return ", ".join(values)
